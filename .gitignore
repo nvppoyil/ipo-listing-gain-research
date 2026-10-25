@@ -1,6 +1,7 @@
-__pycache__/
-.pytest_cache/
-.venv/
-.tools/
-.env
-*.pyc
+node_modules
+.next
+.env*.local
+
+.vercel
+.env*
+!.env.example
