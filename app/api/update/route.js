@@ -10,7 +10,7 @@ Reply with JSON only, no other text, in exactly this shape:
 }
 
 async function pickModels(key) {
-  const out = [process.env.GEMINI_MODEL, 'gemini-flash-latest'];
+  const out = [process.env.GEMINI_MODEL, 'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-flash-latest'];
   try {
     const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', {
       headers: { 'x-goog-api-key': key },
@@ -26,7 +26,7 @@ async function pickModels(key) {
       .map((m) => m.name.replace('models/', ''))
       .sort()
       .reverse();
-    out.push(...names.slice(0, 5));
+    out.push(...names.slice(0, 4));
   } catch {}
   return out.filter((m, k, a) => m && a.indexOf(m) === k);
 }
