@@ -9,6 +9,28 @@ Reply with JSON only, no other text, in exactly this shape:
 "price" is the upper price band as a number. "g" is yearly profit growth in percent, "pe" is the P/E divided by the peer P/E, "de" is debt-to-equity. Each gmp "d" must be the real date of that reading.`;
 }
 
+async function pickModels(key) {
+  const out = [process.env.GEMINI_MODEL, 'gemini-flash-latest'];
+  try {
+    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', {
+      headers: { 'x-goog-api-key': key },
+    });
+    const j = await r.json();
+    const names = (j.models || [])
+      .filter(
+        (m) =>
+          (m.supportedGenerationMethods || []).includes('generateContent') &&
+          /flash/.test(m.name) &&
+          !/image|tts|live|audio|embed|thinking|robotics|computer/.test(m.name)
+      )
+      .map((m) => m.name.replace('models/', ''))
+      .sort()
+      .reverse();
+    out.push(...names.slice(0, 5));
+  } catch {}
+  return out.filter((m, k, a) => m && a.indexOf(m) === k);
+}
+
 export async function POST(req) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return Response.json({ error: 'nokey' }, { status: 500 });
@@ -22,11 +44,10 @@ export async function POST(req) {
       .map((x) => x.slice(0, 60));
   } catch {}
 
-  const models = [process.env.GEMINI_MODEL, 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'].filter(
-    (m, k, a) => m && a.indexOf(m) === k
-  );
+  const models = await pickModels(key);
+  const log = [];
+  let quotaMsg = '';
 
-  let last = { error: 'model', status: 404 };
   for (const m of models) {
     let r;
     try {
@@ -44,26 +65,23 @@ export async function POST(req) {
     } catch {
       return Response.json({ error: 'The server could not reach Google.' }, { status: 502 });
     }
-    if (r.status === 404) {
-      last = { error: 'model', status: 404 };
-      continue;
-    }
     const j = await r.json().catch(() => ({}));
-    if (r.status === 429) {
-      last = { error: (j.error && j.error.message) || 'quota', status: 429 };
-      continue;
+    const msg = (j.error && j.error.message) || '';
+    if (r.ok) {
+      const cd = (j.candidates || [])[0] || {};
+      return Response.json({
+        txt: ((cd.content || {}).parts || []).map((x) => x.text || '').join(''),
+        gs: ((cd.groundingMetadata || {}).groundingChunks || []).length,
+      });
     }
-    if (!r.ok) {
-      return Response.json(
-        { error: (j.error && j.error.message) || 'HTTP ' + r.status, status: r.status },
-        { status: 502 }
-      );
+    log.push(`${m}=${r.status}`);
+    if (r.status === 400 || r.status === 401 || r.status === 403) {
+      return Response.json({ error: msg || 'HTTP ' + r.status, status: r.status }, { status: 502 });
     }
-    const cd = (j.candidates || [])[0] || {};
-    return Response.json({
-      txt: ((cd.content || {}).parts || []).map((x) => x.text || '').join(''),
-      gs: ((cd.groundingMetadata || {}).groundingChunks || []).length,
-    });
+    if (r.status === 429 && !quotaMsg) quotaMsg = msg;
   }
-  return Response.json(last, { status: 502 });
+  if (quotaMsg) {
+    return Response.json({ error: `${quotaMsg} | tried: ${log.join(', ')}`, status: 429 }, { status: 502 });
+  }
+  return Response.json({ error: `model: tried ${log.join(', ')}`, status: 404 }, { status: 502 });
 }
