@@ -1,4 +1,4 @@
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 function buildPrompt(known) {
   const today = new Date().toISOString().slice(0, 10);
@@ -31,9 +31,50 @@ async function pickModels(key) {
   return out.filter((m, k, a) => m && a.indexOf(m) === k);
 }
 
+async function askOpenAI(key, prompt) {
+  const models = [process.env.OPENAI_MODEL, 'gpt-5-mini', 'gpt-4.1-mini', 'gpt-5'].filter(
+    (m, k, a) => m && a.indexOf(m) === k
+  );
+  const log = [];
+  let quota = '';
+  for (const m of models) {
+    let r;
+    try {
+      r = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+        body: JSON.stringify({ model: m, input: prompt, tools: [{ type: 'web_search' }] }),
+      });
+    } catch {
+      return Response.json({ error: 'The server could not reach OpenAI.' }, { status: 502 });
+    }
+    const j = await r.json().catch(() => ({}));
+    const msg = (j.error && j.error.message) || '';
+    if (r.ok) {
+      const parts = (j.output || [])
+        .filter((x) => x.type === 'message')
+        .flatMap((x) => x.content || [])
+        .filter((c) => c.type === 'output_text');
+      const urls = new Set(
+        parts.flatMap((c) => c.annotations || []).filter((a) => a.type === 'url_citation').map((a) => a.url)
+      );
+      return Response.json({ txt: parts.map((c) => c.text || '').join(''), gs: urls.size });
+    }
+    log.push(`${m}=${r.status}`);
+    if (r.status === 401) return Response.json({ error: msg || 'HTTP 401', status: 401 }, { status: 502 });
+    if (r.status === 429) {
+      quota = msg;
+      if (/quota|billing|credit/i.test(msg)) break;
+    }
+  }
+  if (quota) return Response.json({ error: `${quota} | tried: ${log.join(', ')}`, status: 429 }, { status: 502 });
+  return Response.json({ error: `model: tried ${log.join(', ')}`, status: 404 }, { status: 502 });
+}
+
 export async function POST(req) {
   const key = process.env.GEMINI_API_KEY;
-  if (!key) return Response.json({ error: 'nokey' }, { status: 500 });
+  const okey = process.env.OPENAI_API_KEY;
+  if (!key && !okey) return Response.json({ error: 'nokey' }, { status: 500 });
 
   let known = [];
   try {
@@ -43,6 +84,8 @@ export async function POST(req) {
       .slice(0, 40)
       .map((x) => x.slice(0, 60));
   } catch {}
+
+  if (okey) return askOpenAI(okey, buildPrompt(known));
 
   const models = await pickModels(key);
   const log = [];
