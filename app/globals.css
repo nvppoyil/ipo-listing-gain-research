@@ -95,3 +95,11 @@ ol.how{margin:10px 0 0;padding-left:20px;color:var(--mu);font-size:.92rem}ol.how
 .cc b{display:block;font:700 1.35rem var(--hd)}.cc span{color:var(--mu);font-size:.88rem}
 table.sct{width:100%;border-collapse:collapse;margin:8px 0}table.sct td,table.sct th{text-align:left;padding:8px 6px;border-bottom:1px solid var(--ln);font-size:.92rem}
 .warn{border:1px solid var(--nd);background:var(--nb);border-radius:10px;padding:10px 12px;margin:14px 0;font-size:.92rem}
+
+/* Pipeline sections: white, off-white, dark */
+.grp{border:1px solid var(--ln);border-radius:16px;padding:6px 22px 14px;margin:22px 0;background:var(--pbg);color:var(--ink)}
+.grp .gh{margin:16px 0 2px}
+.grp .pr:first-of-type{border-top-color:transparent}
+.g-open{--pbg:#ffffff;--sf:#f4f6fb;--bg:#ffffff;--ink:#121a2e;--mu:#5d6679;--ln:#dfe4ee;--ac:#2f45c8}
+.g-wait{--pbg:#f3f0e8;--sf:#ffffff;--bg:#f3f0e8;--ink:#121a2e;--mu:#625d52;--ln:#ddd8cb;--ac:#2f45c8}
+.g-pipe{--pbg:#10162a;--sf:#1b2440;--bg:#10162a;--ink:#e8ecf6;--mu:#a3adc2;--ln:#2a3552;--ac:#8ea0ff}
