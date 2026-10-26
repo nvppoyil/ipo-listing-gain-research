@@ -1,8 +1,7 @@
 # IPO Verdict (Next.js)
 
-Create a file named .env.local next to package.json with one line:
-OPENAI_API_KEY=your-key
-(see .env.example)
+No keys are needed. The Update button reads NSE directly.
+(For AI updates, see .env.example.)
 
 Run on your computer first:
 1. Install Node.js 18 or newer.
@@ -14,5 +13,5 @@ Run on your computer first:
 Go live on Vercel:
 1. Push this folder to GitHub. The file .env.local is not pushed on purpose.
 2. In Vercel, import the repo.
-3. Settings > Environment Variables > add OPENAI_API_KEY with your key.
+3. Settings > Environment Variables > no keys are needed.
 4. Deploy.

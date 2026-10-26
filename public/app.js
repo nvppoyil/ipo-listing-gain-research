@@ -109,7 +109,7 @@ const row=(p,n)=>`<article class="pr"><div class="pt"><h4>${esc(p.name)}</h4><sp
 <p class="note">${esc(p.note||'')}</p>
 <div class="pa">${p.gmp&&p.price?`<button class="btn p ck" data-i="${n}">Check GMP and chances</button>`:''}<button class="btn rs" data-i="${n}">Copy research request</button>${p.price?`<button class="btn av" data-i="${n}">Add to my verdicts</button>`:''}${p.rhp?`<a href="${p.rhp}" target="_blank" rel="noopener">SEBI filing</a>`:''}${p.ap?`<a href="${p.ap}" target="_blank" rel="noopener">Abridged prospectus</a>`:''}</div></article>`;
 const more=[['Zetwerk Manufacturing Businesses','zetwerk-manufacturing-businesses-limited-rhp_105195','13 Oct'],['Tonbo Imaging India','tonbo-imaging-india-limited-rhp_105141','12 Oct'],['Sahajanand Medical Technologies','sahajanand-medical-technologies-limited-rhp_105149','10 Oct'],['Fusion CX','fusion-cx-limited-rhp_105257','9 Oct'],['HD Fire Protect','hd-fire-protect-limited-rhp_105058','5 Oct']];
-function renderPipe(){$('#pipe').innerHTML=`<div class="src"><b>Where this list comes from (${esc(stamp)}).</b> SEBI’s red herring filings were read directly. NSE’s upcoming issues page builds its table with a script, so it came back empty. BSE’s page blocks automated access. Zerodha Varsity is for background reading and isn’t an IPO list. Press Update all data above to refresh it.${stamp.includes('snapshot')?'':' The last refresh used AI web search, so confirm key numbers on NSE or BSE.'}</div>`+
+function renderPipe(){$('#pipe').innerHTML=`<div class="src"><b>Where this list comes from (${esc(stamp)}).</b> SEBI’s red herring filings were read directly. NSE’s upcoming issues page builds its table with a script, so it came back empty. BSE’s page blocks automated access. Zerodha Varsity is for background reading and isn’t an IPO list. Press Update all data above to refresh it.${stamp.includes('snapshot')?'':' The last refresh was automatic, so confirm key numbers on NSE or BSE.'}</div>`+
 ['open','wait','pipe'].map(g=>`<h3 class="gh">${GL[g][0]}</h3><p class="hint" style="color:var(--mu);font-size:.9rem;margin:0">${GL[g][1]}</p>`+P.map((p,n)=>[p,n]).filter(x=>x[0].g===g).map(x=>row(x[0],x[1])).join('')).join('')+
 `<details><summary>Earlier October filings (already closed or closing)</summary><ul>${more.map(m=>`<li><a href="${S}${m[1]}.html" target="_blank" rel="noopener">${m[0]}</a>, RHP filed ${m[2]}</li>`).join('')}</ul></details>`}
 function show(v){$('#pipe').hidden=v!=='pipe';$('#rpt').hidden=v!=='rpt';$('#mine').hidden=v!=='mine';document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.v===(v==='rpt'?'pipe':v)));window.scrollTo(0,0)}
@@ -176,7 +176,7 @@ function mergeAI(list){let upd=0,add=0;
    if(p.sub)i.sub=Object.assign({},i.sub,p.sub);if(p.fund)i.fund=Object.assign({},i.fund,p.fund)}}
  return{upd,add}}
 function explain(e){const m=String(e.message||'');
- if(m==='nokey')return'The server has no API key. Add OPENAI_API_KEY (or GEMINI_API_KEY) to the .env.local file and restart npm run dev.';
+ if(m==='nokey')return'The server is missing a key. Open .env.local, add TAVILY_API_KEY and one reader key (GROQ_API_KEY or GEMINI_API_KEY), then restart npm run dev.';
  if(e.status===429)return'The AI service refused because of a limit or because the account has no credit. It said: '+m.slice(0,600);
  if(e.status===401||e.status===403||/api key/i.test(m))return'The AI service did not accept the key in .env.local. Check it and restart npm run dev.';
  if(m==='parse')return'The AI replied in a format I could not read. Press Update again.';
@@ -185,9 +185,9 @@ function explain(e){const m=String(e.message||'');
  return'Something went wrong: '+m}
 $('#upall').onclick=async()=>{const b=$('#upall'),st=$('#ust'),er=$('#uerr');er.hidden=true;b.disabled=true;st.textContent='Step 1 of 3: asking the AI to search the web. This can take up to a minute.';
  try{const a=await askAI();st.textContent='Step 2 of 3: reading the answer.';const list=parseAI(a.txt);st.textContent='Step 3 of 3: updating your data.';
-  const r=mergeAI(list);stamp=new Date().toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})+', AI web search';
+  const r=mergeAI(list);stamp=new Date().toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})+', '+(a.src||'AI web search');
   ls.set(PK,JSON.stringify({t:stamp,p:P}));save();renderPipe();render();
-  st.textContent=`Updated ${stamp}. ${r.upd} refreshed, ${r.add} new, ${a.gs} web sources used.`}
+  st.textContent=`Updated ${stamp}. ${r.upd} refreshed, ${r.add} new${a.gs?', '+a.gs+' web sources used':''}.`}
  catch(e){st.textContent='Update failed.';er.textContent=explain(e);er.hidden=false}
  b.disabled=false};
 renderPipe();
