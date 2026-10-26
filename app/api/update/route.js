@@ -22,10 +22,11 @@ export async function POST(req) {
       .map((x) => x.slice(0, 60));
   } catch {}
 
-  const models = [process.env.GEMINI_MODEL, 'gemini-flash-latest', 'gemini-2.5-flash'].filter(
+  const models = [process.env.GEMINI_MODEL, 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'].filter(
     (m, k, a) => m && a.indexOf(m) === k
   );
 
+  let last = { error: 'model', status: 404 };
   for (const m of models) {
     let r;
     try {
@@ -43,8 +44,15 @@ export async function POST(req) {
     } catch {
       return Response.json({ error: 'The server could not reach Google.' }, { status: 502 });
     }
-    if (r.status === 404) continue;
+    if (r.status === 404) {
+      last = { error: 'model', status: 404 };
+      continue;
+    }
     const j = await r.json().catch(() => ({}));
+    if (r.status === 429) {
+      last = { error: (j.error && j.error.message) || 'quota', status: 429 };
+      continue;
+    }
     if (!r.ok) {
       return Response.json(
         { error: (j.error && j.error.message) || 'HTTP ' + r.status, status: r.status },
@@ -57,5 +65,5 @@ export async function POST(req) {
       gs: ((cd.groundingMetadata || {}).groundingChunks || []).length,
     });
   }
-  return Response.json({ error: 'model' }, { status: 502 });
+  return Response.json(last, { status: 502 });
 }

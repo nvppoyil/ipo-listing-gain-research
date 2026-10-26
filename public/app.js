@@ -177,7 +177,7 @@ function mergeAI(list){let upd=0,add=0;
  return{upd,add}}
 function explain(e){const m=String(e.message||'');
  if(m==='nokey')return'The server has no API key. Add GEMINI_API_KEY to the .env.local file and restart npm run dev.';
- if(e.status===429)return'The free limit was reached. Wait a few minutes and press Update again. If it keeps happening, try tomorrow.';
+ if(e.status===429)return'Google says the free limit is used up, on every model I tried. Google said: '+m.slice(0,300);
  if(e.status===401||e.status===403||/api key/i.test(m))return'Google did not accept the key in .env.local. Check it and restart npm run dev.';
  if(m==='parse')return'The AI replied in a format I could not read. Press Update again.';
  if(m==='model')return'That AI model name was not found. Remove GEMINI_MODEL from .env.local to use the default.';
