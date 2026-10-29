@@ -26,6 +26,8 @@ h1{font:700 1.35rem/1.1 var(--hd);margin:0;letter-spacing:-.02em}
 .good{color:var(--gd)}.bad{color:var(--bd)}.neu{color:var(--nd)}.no{color:var(--mu)}
 .dot.good{background:var(--gd)}.dot.bad{background:var(--bd)}.dot.neu{background:var(--nd)}
 .hero{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:flex-end}
+.rep-actions{display:flex;flex-wrap:wrap;gap:8px}
+.remove-ipo{border-color:var(--bd);color:var(--bd)}
 .hero h2{font:700 1.05rem var(--hd);margin:0;color:var(--mu)}
 .vw{font:700 3.4rem/1 var(--hd);letter-spacing:-.03em;margin:6px 0 10px}
 .hero p{margin:0;max-width:52ch}

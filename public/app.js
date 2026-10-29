@@ -7,7 +7,7 @@ const seed=[
 {name:'Strong case',demo:1,price:200,list:'TBA',gmp:[{d:'2026-10-20',v:48},{d:'2026-10-23',v:62}],sub:{total:84,qib:120,nii:90,retail:30},fund:{g:32,pe:.9,de:.3},mood:'strong'},
 {name:'Weak case',demo:1,price:150,list:'TBA',gmp:[{d:'2026-10-20',v:6},{d:'2026-10-23',v:-4}],sub:{total:1.4,qib:.9,nii:1.2,retail:2},fund:{g:-8,pe:1.8,de:2.1},mood:'weak'}];
 let ipos=seed,sel=0;
-try{const s=JSON.parse(localStorage.getItem(KEY));if(Array.isArray(s)&&s.length)ipos=s}catch(e){}
+try{const s=JSON.parse(localStorage.getItem(KEY));if(Array.isArray(s))ipos=s}catch(e){}
 try{const t=localStorage.getItem('ipo-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(ipos))}catch(e){}};
 
@@ -56,8 +56,8 @@ function renderList(){$('#list').innerHTML=ipos.map((i,n)=>{const r=ev(i),g=r.mo
 function renderRep(){const i=ipos[sel];if(!i){$('#rep').innerHTML='<p>Add an IPO to get started.</p>';return}
  const r=ev(i),g=r.mods[0];
  $('#rep').innerHTML=`<section class="hero"><div><h2>${esc(i.name)}, upper band ₹${i.price}, listing ${esc(i.list||'TBA')}</h2>
- <div class="vw ${C[r.v]}">${L[r.v]}</div><p>${esc(r.t)}</p><div class="conf">Confidence ${r.conf}. ${r.n} of 4 checks have data. Score ${r.pt} of ${r.mx}.</div></div>
- <button class="btn upd" data-f="">Update data</button></section>
+ <p class="hint">At the upper band: +25% target INR ${(i.price*1.25).toFixed(2)}; -15% risk threshold INR ${(i.price*.85).toFixed(2)}</p><div class="vw ${C[r.v]}">${L[r.v]}</div><p>${esc(r.t)}</p><div class="conf">Confidence ${r.conf}. ${r.n} of 4 checks have data. Score ${r.pt} of ${r.mx}.</div></div>
+ <div class="rep-actions"><button class="btn upd" data-f="">Update data</button><button class="btn remove-ipo" type="button">Remove from My verdicts</button></div></section>
  ${g.scored?`<section class="sec"><h3>Where the grey market points</h3><p class="hint">Your bars: a gain of 25% or more is good, a loss of 15% is the risk.</p>${ruler(g.pct)}</section>`:''}
  <section class="sec" style="margin-top:6px"><h3>What the score is made of</h3>
  ${r.mods.map(m=>{const w=m.scored?Math.min(100,Math.abs(m.points)/m.max*100):0;
@@ -89,6 +89,7 @@ $('#cx').onclick=()=>dlg.close();
 $('#add').onclick=()=>openForm(false);
 $('#th').onclick=()=>{const d=document.documentElement,dark=d.dataset.theme?d.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches,n=dark?'light':'dark';d.dataset.theme=n;try{localStorage.setItem('ipo-theme',n)}catch(e){}};
 document.addEventListener('click',e=>{const it=e.target.closest('.item');if(it){sel=+it.dataset.n;render();return}
+ const rm=e.target.closest('.remove-ipo');if(rm){const i=ipos[sel];if(i&&confirm(`Remove ${i.name} from My verdicts?`)){ipos.splice(sel,1);sel=Math.max(0,Math.min(sel,ipos.length-1));save();render()}return}
  const u=e.target.closest('.upd');if(u)openForm(true,u.dataset.f||'gmp')});
 render();
 
@@ -105,11 +106,11 @@ let P=[
 {g:'pipe',name:'Tata Sons',state:'No dates yet',note:'Listed as upcoming by Zerodha. Dates to be announced.'}];
 const GL={open:['Opens this week','You can still apply. Dates and bands come from broker and news pages, so confirm them on NSE or BSE before bidding.'],wait:['Closed, waiting to list','Bidding is over. Check allotment and listing dates on each card.'],pipe:['In the pipeline, no dates yet','From news and broker lists. Not priced yet, so treat as unconfirmed.']};
 const row=(p,n)=>`<article class="pr"><div class="pt"><h4>${esc(p.name)}</h4><span class="pill2">${esc(p.state)}</span></div>
-<dl class="pd">${[['Bidding',p.open?p.open+' to '+p.close:'To be announced'],['Price band',p.band||'To be announced'],['Lot',p.lot||'To be announced'],['Issue size',p.size||'To be announced'],['Listing',p.list||'To be announced']].map(a=>`<div><dt>${a[0]}</dt><dd>${esc(a[1])}</dd></div>`).join('')}</dl>
-<p class="note">${esc(p.note||'')}</p>
-<div class="pa">${p.gmp&&p.price?`<button class="btn p ck" data-i="${n}">Check GMP and chances</button>`:''}<button class="btn rs" data-i="${n}">Copy research request</button>${p.price?`<button class="btn av" data-i="${n}">Add to my verdicts</button>`:''}${p.rhp?`<a href="${p.rhp}" target="_blank" rel="noopener">SEBI filing</a>`:''}${p.ap?`<a href="${p.ap}" target="_blank" rel="noopener">Abridged prospectus</a>`:''}</div></article>`;
+<dl class="pd">${[['Bidding',p.open?p.open+' to '+p.close:'To be announced'],['Price band',p.band||'Unavailable'],['Lot',p.lot||'Unavailable'],['Issue size',p.size||'Unavailable'],['Listing',p.list||'Unavailable'],['Subscription',p.sub&&p.sub.total!=null?`${p.sub.total}x total${p.sub.qib!=null?`, QIB ${p.sub.qib}x`:''}${p.sub.nii!=null?`, NII ${p.sub.nii}x`:''}${p.sub.retail!=null?`, retail ${p.sub.retail}x`:''}`:'Unavailable'],['Data as of',p.asof||'No source timestamp']].map(a=>`<div><dt>${a[0]}</dt><dd>${esc(a[1])}</dd></div>`).join('')}</dl>
+<p class="note">${esc(p.warn||p.note||'')}</p>
+<div class="pa">${Number.isFinite(Number(p.price))&&Number(p.price)>0?`<button class="btn p ck" data-i="${n}">Check GMP sources</button>`:''}<button class="btn rs" data-i="${n}">Copy research request</button>${p.price?`<button class="btn av" data-i="${n}">Add to my verdicts</button>`:''}${p.sourceUrl?`<a href="${esc(p.sourceUrl)}" target="_blank" rel="noopener">${esc(p.srcs||'Source')}</a>`:''}${Array.isArray(p.gmpRefs)?p.gmpRefs.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.source)}</a>`).join(''):''}${p.rhp?`<a href="${p.rhp}" target="_blank" rel="noopener">SEBI filing</a>`:''}${p.ap?`<a href="${p.ap}" target="_blank" rel="noopener">Abridged prospectus</a>`:''}</div></article>`;
 const more=[['Zetwerk Manufacturing Businesses','zetwerk-manufacturing-businesses-limited-rhp_105195','13 Oct'],['Tonbo Imaging India','tonbo-imaging-india-limited-rhp_105141','12 Oct'],['Sahajanand Medical Technologies','sahajanand-medical-technologies-limited-rhp_105149','10 Oct'],['Fusion CX','fusion-cx-limited-rhp_105257','9 Oct'],['HD Fire Protect','hd-fire-protect-limited-rhp_105058','5 Oct']];
-function renderPipe(){$('#pipe').innerHTML=`<div class="src"><b>Where this list comes from (${esc(stamp)}).</b> SEBI’s red herring filings were read directly. NSE’s upcoming issues page builds its table with a script, so it came back empty. BSE’s page blocks automated access. Zerodha Varsity is for background reading and isn’t an IPO list. Press Update all data above to refresh it.${stamp.includes('snapshot')?'':' The last refresh was automatic, so confirm key numbers on NSE or BSE.'}</div>`+
+function renderPipe(){$('#pipe').innerHTML=`<div class="src"><b>IPO data snapshot (${esc(stamp)}).</b> Each card shows its available source timestamp and source link. GMP, financials and category subscription are unavailable unless a cited source provides them; GMP is unofficial.</div>`+
 ['open','wait','pipe'].map(g=>{const it=P.map((p,n)=>[p,n]).filter(x=>x[0].g===g);return `<section class="grp g-${g}"><h3 class="gh">${GL[g][0]}</h3><p class="hint" style="color:var(--mu);font-size:.9rem;margin:0">${GL[g][1]}</p>${it.length?it.map(x=>row(x[0],x[1])).join(''):'<p class="note" style="padding:14px 0">Nothing here right now.</p>'}</section>`}).join('')+
 `<details><summary>Earlier October filings (already closed or closing)</summary><ul>${more.map(m=>`<li><a href="${S}${m[1]}.html" target="_blank" rel="noopener">${m[0]}</a>, RHP filed ${m[2]}</li>`).join('')}</ul></details>`}
 function show(v){$('#pipe').hidden=v!=='pipe';$('#rpt').hidden=v!=='rpt';$('#mine').hidden=v!=='mine';document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.v===(v==='rpt'?'pipe':v)));window.scrollTo(0,0)}
@@ -138,24 +139,40 @@ function renderRpt(i,p,n){const r=ev(i),g=r.mods[0],c=chance(i,r),lv=g.hist[g.hi
  <section class="sec" style="margin-top:10px"><h3>If the grey market moves</h3><table class="sct"><tr><th>Scenario</th><th>GMP</th><th>Listing price</th><th>Gain</th></tr>${rows}</table><p class="hint">Plain arithmetic on today’s GMP. It is not a forecast.</p></section>
  <section class="sec" style="margin-top:10px"><h3>What the score is made of</h3>${mh}</section>
  ${p.facts?`<section class="sec" style="margin-top:10px"><h3>Company numbers used</h3><ul>${p.facts.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>`:''}
- <p class="foot">GMP sources: ${esc(p.srcs)}. GMP is unofficial and can change within hours, and the labels above come from fixed rules, not from a probability model. Confirm the price band and dates on NSE or BSE.</p>
+ <p class="foot">GMP sources: ${Array.isArray(p.gmpRefs)?p.gmpRefs.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.source)}</a>`).join(', '):esc(p.srcs)}. GMP is unofficial and can change within hours, and the labels above come from fixed rules, not from a probability model. Confirm the price band and dates on NSE or BSE.</p>
  <div class="pa"><button class="btn bk">Back to pipeline</button><button class="btn p rs" data-i="${n}">Copy research request</button></div>`}
-document.addEventListener('click',e=>{if(e.target.closest('.bk')){show('pipe');return}
+function renderGmpSources(p,n,result){
+ const quotes=result.quotes||[],sources=result.sources||[];
+ const rows=sources.map(s=>`<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.source)}</a>: ${Number.isFinite(s.gmp)?`₹${s.gmp}`:esc(s.error||'No quote returned')}</li>`).join('');
+ const checked=new Date(result.retrievedAt||Date.now()).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Kolkata'});
+ if(!quotes.length){$('#rpt').innerHTML=`<button class="btn bk">Back to pipeline</button><section class="sec" style="margin-top:20px"><h2>${esc(p.name)} GMP source check</h2><p>No GMP quote could be verified from the public trackers. This does not mean the GMP is ₹0.</p><p>Checked ${esc(checked)} IST.</p><ul>${rows}</ul></section>`;show('rpt');return}
+ if(quotes.length>1&&!result.agrees){$('#rpt').innerHTML=`<button class="btn bk">Back to pipeline</button><section class="sec" style="margin-top:20px"><h2>${esc(p.name)} GMP source check</h2><p class="warn">The public trackers disagree. No combined GMP or verdict is shown; review the source quotes below.</p><p>Checked ${esc(checked)} IST.</p><ul>${rows}</ul></section>`;show('rpt');return}
+ const quote=quotes[0],day=(result.retrievedAt||new Date().toISOString()).slice(0,10);
+ p.gmp=[{d:day,v:quote.gmp}];p.asof=`${checked} IST (retrieved)`;p.srcs=quotes.map(x=>x.source).join(', ');p.gmpRefs=quotes.map(x=>({source:x.source,url:x.url}));
+ p.warn=quotes.length===1?'Only one public tracker returned a quote; it is unofficial and was not independently confirmed.':'Both public trackers returned the same quote; GMP is unofficial and can change quickly.';
+ if(!result.agrees&&quotes.length===1)p.warn+=' The other tracker did not provide a quote.';
+ const i=ipos.find(x=>!x.demo&&x.name.toLowerCase()===p.name.toLowerCase());
+ if(i){i.price=p.price;i.gmp=[{d:day,v:quote.gmp}];i.asof=p.asof;i.srcs=p.srcs;i.gmpRefs=p.gmpRefs;save()}
+ stamp=`GMP checked ${checked} IST`;ls.set(PK,JSON.stringify({t:stamp,p:P}));renderPipe();
+ if(i){render();renderRpt(i,p,n);show('rpt')}
+ else {const temp={name:p.name,price:p.price,gmp:[{d:day,v:quote.gmp}],sub:p.sub||{},fund:p.fund||{},mood:null};renderRpt(temp,p,n);show('rpt')}
+}
+document.addEventListener('click',async e=>{if(e.target.closest('.bk')){show('pipe');return}
  const c=e.target.closest('.ck');if(!c)return;const n=+c.dataset.i,p=P[n];
- let k=ipos.findIndex(x=>x.name.toLowerCase()===p.name.toLowerCase());
- if(k<0){ipos.push({name:p.name,price:p.price,list:p.list||'TBA',gmp:[],sub:{},fund:{},mood:null});k=ipos.length-1}
- const i=ipos[k],have=new Set(p.gmp.map(x=>x.d));i.price=p.price;i.gmp=[...p.gmp.map(x=>({...x})),...(i.gmp||[]).filter(x=>!have.has(x.d))];
- if(p.sub)i.sub=Object.assign({},i.sub,p.sub);if(p.fund)i.fund=Object.assign({},i.fund,p.fund);
- sel=k;save();render();renderRpt(i,p,n);show('rpt')});
+ c.disabled=true;c.textContent='Checking sources…';
+ try{const response=await fetch('/api/gmp',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:p.name})});const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||`GMP source request failed (HTTP ${response.status}).`);renderGmpSources(p,n,result)}
+ catch(error){$('#rpt').innerHTML=`<button class="btn bk">Back to pipeline</button><section class="sec" style="margin-top:20px"><h2>${esc(p.name)} GMP source check</h2><p class="warn">${esc(error.message||'Could not check public GMP sources.')}</p><p>No GMP value was added.</p></section>`;show('rpt')}
+ finally{c.disabled=false;c.textContent='Check GMP sources'}
+});
 // ---- Update all data: Gemini with Google Search ----
 const PK='ipo-verdict-pipe-v1',AK='ipo-verdict-ai-v1';
 let stamp='25 Oct 2026, built-in snapshot';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
-try{const s=JSON.parse(ls.get(PK));if(s&&Array.isArray(s.p)&&s.p.length){P=s.p;stamp=s.t}}catch(e){}
+try{const s=JSON.parse(ls.get(PK));if(s&&Array.isArray(s.p)&&s.p.length){P=s.p;stamp=s.t;$('#ust').textContent='Last successful update: '+stamp+' (saved in this browser).'}}catch(e){}
 const cfg=()=>{try{return JSON.parse(ls.get(AK))||{}}catch(e){return{}}};
 const nk=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 const nn=x=>x==null||x===''||!isFinite(Number(x))?null:Number(x);
-async function askAI(){const r=await fetch('/api/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({known:[...new Set([...P.map(p=>p.name),...ipos.filter(i=>!i.demo).map(i=>i.name)])]})});
+async function askAI(){const r=await fetch('/api/update',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({known:[...new Set([...P.map(p=>p.name),...ipos.filter(i=>!i.demo).map(i=>i.name)])]})});
  const j=await r.json().catch(()=>({}));
  if(!r.ok){const e=new Error(j.error||'HTTP '+r.status);e.status=j.status||r.status;throw e}
  return j}
@@ -165,14 +182,15 @@ function mergeAI(list){let upd=0,add=0;
   let p=P.find(x=>{const y=nk(x.name);return y===k||(k.length>4&&y.length>4&&(y.includes(k)||k.includes(y)))});
   if(p)upd++;else{p={name:String(r.name).slice(0,60),g:'pipe'};P.push(p);add++}
   if(['open','wait','pipe'].includes(r.group))p.g=r.group;
-  ['state','open','close','band','lot','size','list','asof','srcs','note'].forEach(f=>{if(typeof r[f]==='string'&&r[f].trim())p[f]=r[f].trim().slice(0,200)});
-  p.warn=typeof r.warn==='string'?r.warn.trim().slice(0,300):'';
+  ['state','open','close','band','lot','size','list','asof','srcs','note','sourceUrl','rhp'].forEach(f=>{if(typeof r[f]==='string'&&r[f].trim())p[f]=r[f].trim().slice(0,500)});
+  p.warn=typeof r.warn==='string'?r.warn.trim().slice(0,500):p.warn||'';
   let pr=nn(r.price);if(!pr&&!p.price&&p.band){const m=String(p.band).match(/[\d,]+/g);if(m)pr=nn(m[m.length-1].replace(/,/g,''))}if(pr)p.price=pr;
   const g=(Array.isArray(r.gmp)?r.gmp:[]).map(x=>({d:String(x&&x.d||''),v:nn(x&&x.v)})).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x.d)&&x.v!==null);
   if(g.length){const m=new Map((p.gmp||[]).map(x=>[x.d,x.v]));g.forEach(x=>m.set(x.d,x.v));p.gmp=[...m].map(([d,v])=>({d,v})).sort((a,b)=>a.d<b.d?-1:1).slice(-12)}
+  else p.gmp=[]; // A successful source that has no GMP must not leave the old snapshot looking current.
   [['sub',['total','qib','nii','retail']],['fund',['g','pe','de']]].forEach(([key,fl])=>{const o=r[key]||{};fl.forEach(f=>{const v=nn(o[f]);if(v!==null){p[key]=p[key]||{};p[key][f]=v}})});
   const i=ipos.find(x=>!x.demo&&nk(x.name)===nk(p.name));
-  if(i&&p.price){i.price=p.price;if(p.list)i.list=p.list;if(p.gmp){const have=new Set(p.gmp.map(x=>x.d));i.gmp=[...p.gmp.map(x=>({...x})),...(i.gmp||[]).filter(x=>!have.has(x.d))]}
+  if(i&&p.price){i.price=p.price;if(p.list)i.list=p.list;if(g.length){const m=new Map((i.gmp||[]).map(x=>[x.d,x.v]));g.forEach(x=>m.set(x.d,x.v));i.gmp=[...m].map(([d,v])=>({d,v})).sort((a,b)=>a.d<b.d?-1:1).slice(-12)}
    if(p.sub)i.sub=Object.assign({},i.sub,p.sub);if(p.fund)i.fund=Object.assign({},i.fund,p.fund)}}
  return{upd,add}}
 function explain(e){const m=String(e.message||'');
@@ -183,11 +201,11 @@ function explain(e){const m=String(e.message||'');
  if(m.startsWith('model'))return'No AI model worked for this key. Details: '+m.slice(0,400);
  if(e instanceof TypeError)return'Could not reach the server. Check that npm run dev is running.';
  return'Something went wrong: '+m}
-$('#upall').onclick=async()=>{const b=$('#upall'),st=$('#ust'),er=$('#uerr');er.hidden=true;b.disabled=true;st.textContent='Step 1 of 3: asking the AI to search the web. This can take up to a minute.';
- try{const a=await askAI();st.textContent='Step 2 of 3: reading the answer.';const list=parseAI(a.txt);st.textContent='Step 3 of 3: updating your data.';
-  const r=mergeAI(list);stamp=new Date().toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})+', '+(a.src||'AI web search');
+$('#upall').onclick=async()=>{const b=$('#upall'),st=$('#ust'),er=$('#uerr');er.hidden=true;b.disabled=true;st.textContent='Fetching current IPO data from the configured source…';
+ try{const a=await askAI();const list=Array.isArray(a.ipos)?a.ipos:parseAI(a.txt);if(!list.length||!list.every(x=>x&&typeof x.name==='string'&&x.name.trim()))throw new Error('parse');
+  const r=mergeAI(list);stamp=a.asof?new Date(a.asof).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Kolkata'})+' IST':'Fetched '+new Date().toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})+'; source timestamp unavailable';
   ls.set(PK,JSON.stringify({t:stamp,p:P}));save();renderPipe();render();
-  st.textContent=`Updated ${stamp}. ${r.upd} refreshed, ${r.add} new${a.gs?', '+a.gs+' web sources used':''}.`}
+  st.textContent=`Last successful update: ${stamp} (${a.src||'configured source'}). ${r.upd} refreshed, ${r.add} new. Missing fields were left unchanged.`}
  catch(e){st.textContent='Update failed.';er.textContent=explain(e);er.hidden=false}
  b.disabled=false};
 renderPipe();

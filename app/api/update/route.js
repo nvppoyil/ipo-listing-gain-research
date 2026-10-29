@@ -163,6 +163,7 @@ function pd(s) {
 const fd = (t) => (t == null ? '' : `${new Date(t).getUTCDate()} ${MON[new Date(t).getUTCMonth()]}`);
 async function nseGet(path, cookie) {
   const r = await fetch('https://www.nseindia.com' + path, {
+    cache: 'no-store',
     headers: { ...NSE_H, Cookie: cookie, Referer: 'https://www.nseindia.com/market-data/all-upcoming-issues-ipo' },
   });
   if (!r.ok) throw httpErr(`NSE refused the request (HTTP ${r.status}). NSE often blocks servers. Try again later, or run the app on your own computer.`, 502);
@@ -175,7 +176,7 @@ async function nseGet(path, cookie) {
 async function askNSE() {
   let cookie = '';
   try {
-    const home = await fetch('https://www.nseindia.com/', { headers: NSE_H });
+    const home = await fetch('https://www.nseindia.com/', { headers: NSE_H, cache: 'no-store' });
     cookie = (home.headers.getSetCookie ? home.headers.getSetCookie() : []).map((c) => c.split(';')[0]).join('; ');
   } catch {
     throw httpErr('The server could not reach NSE.', 502);
@@ -202,11 +203,13 @@ async function askNSE() {
     ipos.push({
       name: String(name), group, state, open: fd(st) || null, close: fd(en) || null, band, price,
       size: iz > 1e7 ? `₹${Math.round(iz / 1e7).toLocaleString('en-IN')} crore` : null,
-      sub: { total: tot > 0 ? tot : null }, asof: now.toISOString().slice(0, 16).replace('T', ' ') + ' UTC', srcs: 'NSE', warn: '',
+      sub: { total: tot > 0 ? tot : null }, asof: now.toISOString(), srcs: 'NSE',
+      sourceUrl: 'https://www.nseindia.com/market-data/all-upcoming-issues-ipo',
+      warn: 'NSE issue feed does not provide lot size, category subscription, financials, peer valuation or GMP. These remain unavailable until separately verified.',
     });
   }
   if (!ipos.length) throw httpErr('NSE returned no mainboard IPOs right now.', 502);
-  return { txt: JSON.stringify({ ipos }), gs: 0, src: 'NSE direct' };
+  return { ipos, gs: 0, src: 'NSE', asof: now.toISOString() };
 }
 
 export async function POST(req) {
@@ -219,7 +222,7 @@ export async function POST(req) {
   const direct = env.UPDATE_MODE !== 'ai'; // default: read NSE directly, no AI
   const nokey = () => Response.json({ error: 'nokey' }, { status: 500 });
   try {
-    if (direct) return Response.json(await askNSE());
+    if (direct) return Response.json(await askNSE(), { headers: { 'Cache-Control': 'no-store, max-age=0' } });
     if (env.TAVILY_API_KEY) {
       if (!(env.GROQ_API_KEY || env.GEMINI_API_KEY || env.OPENAI_API_KEY)) return nokey();
       const { material, n } = await gather(env.TAVILY_API_KEY, known);
